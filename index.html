@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+  <script src="http://code.jquery.com/jquery-1.11.2.js"></script>
+  <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+	<style>
+	.highlight{
+	color:blue;
+	}
+	</style>
+  <script>
+  $(function() {
+		$( "#tags" ).autocomplete({
+      source: function(request, respone){ // Скармливаем в автокоплит запрос и объект с данными
+				$.get("sites.json", { // да я быдло, можно было использовать $.ajax или RequireJS
+          query: request.term // запрос в поле ввода
+				}, 
+				function (data) {
+					// приведем полученные данные к необходимому формату и передадим в предоставленную функцию respone
+					var json = $.parseJSON(data);
+					var re = $.ui.autocomplete.escapeRegex(request.term);
+					var matcher = new RegExp("^.*\\b" + re, "i"); // регулярка фильтра, слова совпадают с первой буквы и можно набирать ссылку без http:// и www
+					respone($.grep(($.map(json.data, //собираем respone
+					function(item, i){	
+						return{
+							label: item[0] + ' - ' + item[1], // в label передаем имя и ссылку
+							value: item[1] // value передаем ссылку по которой будем уходить при клике
+						}
+					})),
+					function(item){
+						return matcher.test(item.label); // возвращаем лейблы посли сортировки
+					}));
+				});
+			},
+			multiple:true,
+			select: function( event, ui ) { // при клике уходим по ссылке значения выбранного объекта
+			window.location = ui.item.value;
+      },
+			autoFill: true,
+			selectFirst: true,
+		}).data('ui-autocomplete')._renderItem = function( ul, item ) {// фича подсветки букафф, чтоб было понятно юзеру что происходит
+      var term = $('#tags').val();
+      var label = item.label.replace(new RegExp(term, 'i'), '<span class="highlight">$&</span>');
+      return $( '<li></li>' )
+      .data( 'ui-autocomplete-item', item )
+      .append( label )
+      .appendTo( ul );
+    };
+		$.ui.autocomplete.prototype._renderMenu = function( ul, items ) { //ограничение вывода кол-ва всплывающих подсказок 
+			var self = this;
+			$.each( items, function( index, item ) {
+				if (index < 4) // Ограничиваем кол-во запросов 4
+         {self._renderItem( ul, item );}
+      });
+		}
+  });
+
+	</script>
+</head>
+<body>
+<div class="ui-widget">
+  <label for="tags">Tags: </label>
+  <input id="tags">
+</div>
+</body>
+</html>
